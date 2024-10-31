@@ -130,6 +130,7 @@ anim={
 }
 
 player={
+ pad=0,
  x=16,
  y=16,
  -- move, idle must be present
@@ -164,14 +165,13 @@ player={
  end,
 
  -- update state
- -- l,r,u,d,a,b = controller input
- update=function(self,f,pad)
-  local l=btn(0,pad)
-  local r=btn(1,pad)
-  local u=btn(2,pad)
-  local d=btn(3,pad)
-  local a=btn(4,pad)
-  local b=btn(5,pad)
+ update=function(self,f)
+  local l=btn(0,self.pad)
+  local r=btn(1,self.pad)
+  local u=btn(2,self.pad)
+  local d=btn(3,self.pad)
+  local a=btn(4,self.pad)
+  local b=btn(5,self.pad)
 
   if self.health<=0 then
    return
@@ -344,28 +344,64 @@ enemy={
 
 --music(0)
 
-p1=player:new({
- x=20,
- y=20,
-})
-
 p2=player:new({
- x=100,
- y=100,
- plume_color=14,
+ plume_color=2,
  anims={
   move=anim:new({
-   sprs={25,27},
+   sprs={19,21},
    fpi=3
   }),
   idle=anim:new({
-   sprs={25,26},
+   sprs={19,20},
    fpi=10
   })
  }
 })
 
-players={p1}
+p14=player:new({
+ plume_color=14,
+ anims={
+  move=anim:new({
+   sprs={22,24},
+   fpi=3
+  }),
+  idle=anim:new({
+   sprs={22,23},
+   fpi=10
+  })
+ }
+})
+
+p8=player:new({
+ plume_color=8,
+ anims={
+  move=anim:new({
+   sprs={38,40},
+   fpi=3
+  }),
+  idle=anim:new({
+   sprs={38,39},
+   fpi=10
+  })
+ }
+})
+
+p3=player:new({
+ plume_color=3,
+ anims={
+  move=anim:new({
+   sprs={54,56},
+   fpi=3
+  }),
+  idle=anim:new({
+   sprs={54,55},
+   fpi=10
+  })
+ }
+})
+
+player_templates={p2,p3,p8,p14}
+players={}
 
 enemies={}
 gosoh_timer=120
@@ -378,6 +414,22 @@ cam = {
 }
 
 minimap=false
+
+function pad_active(pad)
+ local pad_active=false
+ for p in all(players) do
+  if p.pad==pad then
+   pad_active=true
+  end
+ end
+ return pad_active
+end
+
+function decorate_floor(p,t)
+ if mget(p[1],p[2])==0 then
+  mset(p[1],p[2],t)
+ end
+end
 
 function init()
  for x=0,mapw do
@@ -405,34 +457,66 @@ function init()
    end
   end
  end
+
+ for x=0,mapw do
+	 for y=0,maph do
+   if x%8==0 and y%8==0 then
+    local points = {
+     {x,y},{x+1,y},{x,y+1},{x+1,y+1}
+    }
+    for p in all(points) do
+     decorate_floor(p,4)
+    end
+   end
+   if (x+4)%8==0 and (y+4)%8==0 then
+    local points = {
+     {x-1,y-1},{x-1,y},{x-1,y+1},{x-1,y+2},
+     {x+2,y-1},{x+2,y},{x+2,y+1},{x+2,y+2},
+     {x,y-1},{x+1,y-1},{x,y+2},{x+1,y+2}
+    }
+    for p in all(points) do
+     decorate_floor(p,4)
+    end
+   end
+  end
+ end
  
+ players={}
  enemies={}
-
- for p in all(players) do
-  p.health=3
-  p.score=0
- end
-
- place_object(players[1])
- for p in all(players) do
-  place_object_near(p, players[1].x, players[1].y)
- end
 end
 
 init()
 
 function _update()
- for pad=0,8 do
+ for pad=0,4 do
+  if btn(4,pad) and btn(5,pad) then
+   if not pad_active(pad) then
+    local player=rnd(player_templates)
+    player.pad=pad
+    if #players==0 then
+     place_object(player)
+    else
+     place_object_near(player,players[1].x,players[1].y)
+    end
+    add(players,player)
+    del(player_templates,player)
+   end
+  end
+ end
+
+ for pad=0,4 do
   if btnp(4,pad) and btn(5,pad)
      or btn(4,pad) and btnp(5,pad) then
-   minimap=not minimap
-   break
+   if pad_active(pad) then
+    minimap=not minimap
+    break
+   end
   end
  end
 
  -- update objects
- for pad,player in ipairs(players) do
-  player:update(f,pad-1)
+ for p in all(players) do
+  p:update(f)
  end
 
  if f % gosoh_timer==0 then
@@ -449,18 +533,9 @@ function _update()
  for enemy in all(enemies) do
   enemy:update(f)
  end
- 
- -- despawn out-of-bounds gosohs
- for enemy in all(enemies) do
-  if enemy.typ=='gohos' then
-   if enemy.x<-196 or enemy.x>324 or enemy.y<-196 or enemy.y>324 then
-    del(enemy, enemies)
-   end
-  end
- end
 
  -- enemy player collision
- for _,p in ipairs({p1,p2}) do
+ for p in all(players) do
   if p.health<=0 then
    goto continue
   end
@@ -486,14 +561,9 @@ function _update()
   
   ::continue::
  end
-
- if p1.health<=0 and p2.health<=0 then
-  state='end'
-  return
- end
  
  -- enemy sword collision
- for _,p in ipairs({p1,p2}) do
+ for p in all(players) do
   for enemy in all(enemies) do
    if p.swd_out then
     local swdx = p.x
@@ -539,6 +609,8 @@ function _draw()
       pset(i,j,5)
      elseif c==7 then 
       pset(i,j,6)
+     elseif c==2 then
+      pset(i,j,1)
      else
       pset(i,j,0)
      end
@@ -552,6 +624,8 @@ function _draw()
       pset(i,j,5)
      elseif c==7 then 
       pset(i,j,6)
+     elseif c==3 then
+      pset(i,j,2)
      else
       pset(i,j,0)
      end
@@ -566,6 +640,8 @@ function _draw()
       pset(i,j+maph/2,5)
      elseif c==7 then
       pset(i,j+maph/2,6)
+     elseif c==3 then
+      pset(i,j+maph/2,2)
      else
       pset(i,j+maph/2,0)
      end
@@ -594,8 +670,8 @@ function _draw()
   enemy:draw(cam)
  end
  
- print(cam.x,2,2,7)
- print(cam.y,2,10,7)
+ --print(cam.x,2,2,7)
+ --print(cam.y,2,10,7)
 
  f+=1
 end
