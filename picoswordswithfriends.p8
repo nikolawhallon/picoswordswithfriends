@@ -624,8 +624,8 @@ function _draw()
       pset(i,j,5)
      elseif c==7 then 
       pset(i,j,6)
-     elseif c==3 then
-      pset(i,j,2)
+     elseif c==2 then
+      pset(i,j,1)
      else
       pset(i,j,0)
      end
@@ -640,8 +640,8 @@ function _draw()
       pset(i,j+maph/2,5)
      elseif c==7 then
       pset(i,j+maph/2,6)
-     elseif c==3 then
-      pset(i,j+maph/2,2)
+     elseif c==2 then
+      pset(i,j+maph/2,1)
      else
       pset(i,j+maph/2,0)
      end
