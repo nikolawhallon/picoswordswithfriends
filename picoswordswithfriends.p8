@@ -710,25 +710,24 @@ function _draw()
   clip()
   
   -- this is efficient
-  clip(0,96,128,128)
+  clip(0,96,128,32)
   rectfill(0,96,128,128,0)
   pal(6,5)
   pal(7,6)
   pal(2,1)
   pal(1,0)
   map(0,0,-cam.x,-cam.y,mapw,maph)
+
   pal()
   clip()
   
   -- this is inefficient
-  clip(0,32,128,96)
+  clip(0,32,128,64)
   map(0,0,-cam.x,-cam.y,mapw,maph)
   local mget,pget,pset=mget,pget,pset
   local color_map={[6]=5,[7]=6,[2]=1}
   local y_offset=maph/2
   for i=0,mapw do
-   --local start_y = nil
-   --local current_color = nil
    for j=0,maph do
     local x=i
     local y=j+y_offset
