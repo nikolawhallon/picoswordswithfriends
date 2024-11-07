@@ -432,7 +432,7 @@ players={}
 
 enemies={}
 gosoh_timer=120
-blofire_timer=10
+blofire_timer=60
 
 torches={}
 enchanted_torches={}
@@ -647,25 +647,32 @@ function _update()
  end
 
  if f % blofire_timer==0 and not protected then
-  local t=rnd(enchanted_torches)
-  local p=rnd(players)
-  if t.spawned < 3 then
-   blofire=enemy:new({
-    typ='blofire',
-    spd=0.25,
-    x=t.x,
-    y=t.y,
-    dst=p,
-    anims={
-     move=anim:new({
-      sprs={35,36},
-      fpi=10
-     })
-    },
-    torch=t
-   })
-   add(enemies,blofire)
-   t.spawned+=1
+  for t in all(enchanted_torches) do
+   local should_spawn=false
+   for p in all(players) do
+    if is_close(p.x,p.y,t.x,t.y,64) then
+     should_spawn=true
+     break
+    end
+   end
+
+   if should_spawn then
+    local p=rnd(players)
+    blofire=enemy:new({
+     typ='blofire',
+     spd=0.25,
+     x=t.x,
+     y=t.y,
+     dst=p,
+     anims={
+      move=anim:new({
+       sprs={35,36},
+       fpi=10
+      })
+     }
+    })
+    add(enemies,blofire)
+   end
   end
  end
  
@@ -730,9 +737,6 @@ function _update()
     end
  
     if intersects(enemy.x,enemy.y,8,8,swdx,swdy,8,8) then
-     if enemy.typ=='blofire' then
-      enemy.torch.spawned-=1
-     end
      del(enemies,enemy)
      sfx(13)
      p.score+=1
