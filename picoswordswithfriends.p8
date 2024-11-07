@@ -298,9 +298,6 @@ enemy={
    self.pause-=1
    return
   end
-  --if is_close(self.x,self.y,self.dst_x,self.dst_y,2) then
-  -- return
-  --end
 
   self.vel_x=0
   self.vel_y=0
@@ -336,13 +333,12 @@ enemy={
 
 --music(0)
 
--- todo: use
 key={
  x=0,
  y=0,
  rotate=anim:new({
   sprs={11,12,13,14},
-  fpi=3
+  fpi=6
  })
 }
 
@@ -436,8 +432,12 @@ players={}
 
 enemies={}
 gosoh_timer=120
+blofire_timer=10
 
 torches={}
+enchanted_torches={}
+
+level=0
 
 f=1
 
@@ -566,6 +566,21 @@ function init()
   add(torches,torch)
  end
 
+ enchanted_torches={}
+ for t=0,10 do
+  local torch={
+   x=0,
+   y=0,
+   burn=anim:new({
+    sprs={48,49,50,49},
+    fpi=3
+   }),
+   spawned=0
+  }
+  place_object(torch)
+  add(enchanted_torches,torch)
+ end
+
  key.player=nil
  place_object(key)
  place_object(door)
@@ -624,13 +639,36 @@ function _update()
   local p=rnd(players)
   local a=rnd(1.0)
   gosoh=enemy:new({
-   x=cam.x-4+(128 * cos(a)),
-   y=cam.y-4+(128 * sin(a)),
+   x=cam.x+64+(256 * cos(a)),
+   y=cam.y+64+(256 * sin(a)),
    dst=p,
   })
   add(enemies,gosoh)
  end
 
+ if f % blofire_timer==0 and not protected then
+  local t=rnd(enchanted_torches)
+  local p=rnd(players)
+  if t.spawned < 3 then
+   blofire=enemy:new({
+    typ='blofire',
+    spd=0.25,
+    x=t.x,
+    y=t.y,
+    dst=p,
+    anims={
+     move=anim:new({
+      sprs={35,36},
+      fpi=10
+     })
+    },
+    torch=t
+   })
+   add(enemies,blofire)
+   t.spawned+=1
+  end
+ end
+ 
  for enemy in all(enemies) do
   if protected then
    enemy.pause+=1
@@ -692,6 +730,9 @@ function _update()
     end
  
     if intersects(enemy.x,enemy.y,8,8,swdx,swdy,8,8) then
+     if enemy.typ=='blofire' then
+      enemy.torch.spawned-=1
+     end
      del(enemies,enemy)
      sfx(13)
      p.score+=1
@@ -703,7 +744,11 @@ function _update()
  for torch in all(torches) do
   torch.burn:update(f)
  end
- 
+
+ for torch in all(enchanted_torches) do
+  torch.burn:update(f)
+ end
+  
  key.rotate:update(f)
  
  door.idle:update(f)
@@ -717,6 +762,8 @@ function _update()
   if intersects(p.x,p.y,8,8,door.x,door.y,8,8)
     and key.player==p then
    sfx(15)
+   level+=1
+   gosoh_timer-=2
    init()
    break
   end
@@ -810,6 +857,7 @@ function _draw()
 
   for torch in all(torches) do
    pset(torch.x/8,torch.y/8+maph/2,10)
+   pset(torch.x/8,torch.y/8-1+maph/2,8)
   end
   
   pset(key.x/8,key.y/8+maph/2,12)
@@ -846,18 +894,24 @@ function _draw()
    enemy:draw(cam)
   end
  end
- 
- print(cam.x,2,10,7)
- print(cam.y,2,18,7)
 
  for torch in all(torches) do
   if object_in_view(torch,cam) then
    spr(torch.burn.cur,torch.x-cam.x,torch.y-cam.y)
   end
  end
- 
- local fps = stat(7)
- print(fps,2,2,7)
+
+ for torch in all(enchanted_torches) do
+  if object_in_view(torch,cam) then
+   spr(torch.burn.cur,torch.x-cam.x,torch.y-cam.y)
+  end
+ end
+
+ --local fps = stat(7)
+ --print(level,2,2,7)
+ --print(fps,2,10,7)
+ --print(cam.x,2,18,7)
+ --print(cam.y,2,26,7)
 
  spr(key.rotate.cur,key.x-cam.x,key.y-cam.y)
  spr(door.idle.cur,door.x-cam.x,door.y-cam.y)
@@ -889,14 +943,14 @@ __gfx__
 07cccc70000000000000000008888880088787800000000000055500005555500055555068acca86000000000000000000000000000000000000000000000000
 007cc70000000000000000000088880000888800000000000005550000055500000555006acccca6000000000000000000000000000000000000000000000000
 00077000000000000000000000000000000000000000000000500050005000500005050067777776000000000000000000000000000000000000000000000000
-000880000008800000088000000000000000bb000000000003300000330000003300000000000000000000000000000000000000000000000000000000000000
-008800000008800000008800000bb000000bbbb00000000033ddddd0033000000330000000000000000000000000000000000000000000000000000000000000
-00888000008888000008880000bbbb0000bb7b7b00bbbb0000dd7d7000ddddd000ddddd000000000000000000000000000000000000000000000000000000000
-0088880000888800008888000bbb7b700bbb7b7b0bbbbbb000dd7d7000dd7d7000dd7d7000000000000000000000000000000000000000000000000000000000
-00a88a0000a88a0000a88a000bbb7b700bbbbbbbbbbb7b7b00ddddd000dd7d7000dd7d7000000000000000000000000000000000000000000000000000000000
-000aa000000aa000000aa0000bbbbbb00bbbbbb0bbbb7b7b000ddd0000ddddd000ddddd000000000000000000000000000000000000000000000000000000000
-000cc000000cc000000cc00000bbbb0000bbbb000bbbbbbb000ddd00000ddd00000ddd0000000000000000000000000000000000000000000000000000000000
-000aa000000aa000000aa00000000000000000000000000000d000d000d000d0000d0d0000000000000000000000000000000000000000000000000000000000
+000880000008800000088000000000000000bb000000000003300000330000003300000000077770000000000000000000000000000000000000000000000000
+008800000008800000008800000bb000000bbbb00000000033ddddd0033000000330000000760607000777700007777000000000000000000000000000000000
+00888000008888000008880000bbbb0000bb7b7b00bbbb0000dd7d7000ddddd000ddddd000660606007606070076060700000000000000000000000000000000
+0088880000888800008888000bbb7b700bbb7b7b0bbbbbb000dd7d7000dd7d7000dd7d7000006060006606060066060600000000000000000000000000000000
+00a88a0000a88a0000a88a000bbb7b700bbbbbbbbbbb7b7b00ddddd000dd7d7000dd7d7000000000000060600000606000000000000000000000000000000000
+000aa000000aa000000aa0000bbbbbb00bbbbbb0bbbb7b7b000ddd0000ddddd000ddddd000777000000000000000000000000000000000000000000000000000
+000cc000000cc000000cc00000bbbb0000bbbb000bbbbbbb000ddd00000ddd00000ddd0000666000007770000077700000000000000000000000000000000000
+000aa000000aa000000aa00000000000000000000000000000d000d000d000d0000d0d0006000600060006000060600000000000000000000000000000000000
 __label__
 17761776177617761776177617761776177617761776177617761776111111111111111117761776177617761776177617761776177617761776177617761776
 17661766176617661766176617661766176617661766176617661766111111111111111117661766176617661766176617661766176617661766176617661766
