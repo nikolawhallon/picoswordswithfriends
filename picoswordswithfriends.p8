@@ -433,6 +433,7 @@ players={}
 enemies={}
 gosoh_timer=120
 blofire_timer=60
+skeles_timer=120
 
 torches={}
 enchanted_torches={}
@@ -675,9 +676,27 @@ function _update()
    end
   end
  end
+
+ if f % skeles_timer==0 and not protected then
+  local p=rnd(players)
+  skele=enemy:new({
+   typ='skele',
+   spd=0.75,
+   dst=p,
+   anims={
+    move=anim:new({
+     sprs={57,59},
+     fpi=3
+    })
+   }
+  })
+  place_object(skele)
+  add(enemies,skele)
+ end
  
  for enemy in all(enemies) do
-  if enemy.typ=='gosoh' and protected then
+  if (enemy.typ=='gosoh' or enemy.typ=='skele')
+   and protected then
    enemy.pause+=1
   end
   enemy:update(f)
