@@ -263,10 +263,10 @@ player={
  end
 }
 
--- gohos by default
+-- gosoh by default
 -- override for other enemies
 enemy={
- typ='gohos',
+ typ='gosoh',
  spd=1,
  pause=0,
  x=64,
@@ -310,10 +310,10 @@ enemy={
    self.vel_y=self.spd * sin(a)
   end
   
-  if self.typ=='gohos' or not intersects_tile(3,self.x+1+self.vel_x,self.y+1,6,6) then
+  if self.typ=='gosoh' or not intersects_tile(3,self.x+1+self.vel_x,self.y+1,6,6) then
    self.x+=self.vel_x
   end
-  if self.typ=='gohos' or not intersects_tile(3,self.x+1,self.y+1+self.vel_y,6,6) then
+  if self.typ=='gosoh' or not intersects_tile(3,self.x+1,self.y+1+self.vel_y,6,6) then
    self.y+=self.vel_y
   end
  end,
@@ -646,7 +646,7 @@ function _update()
   add(enemies,gosoh)
  end
 
- if f % blofire_timer==0 and not protected then
+ if f % blofire_timer==0 then
   for t in all(enchanted_torches) do
    local should_spawn=false
    for p in all(players) do
@@ -677,7 +677,7 @@ function _update()
  end
  
  for enemy in all(enemies) do
-  if protected then
+  if enemy.typ=='gosoh' and protected then
    enemy.pause+=1
   end
   enemy:update(f)
